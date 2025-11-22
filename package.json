@@ -1,7 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "start": "go run main.go",
+    "build": "go build",
+    "start": "./realworld-go",
     "stop": "kill-port 3000 > /dev/null 2>&1 || true",
     "test:only": "curl -fv http://localhost:3000",
     "test": "./start-and-test.sh"
