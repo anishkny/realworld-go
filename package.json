@@ -1,11 +1,13 @@
 {
   "type": "module",
   "scripts": {
-    "build": "go build",
-    "start": "./realworld-go",
-    "stop": "kill-port 3000 > /dev/null 2>&1 || true",
-    "test:only": "curl -sfv http://localhost:3000",
-    "test": "./start-and-test.sh"
+    "build": "go build -cover",
+    "prestart": "rm -rf coverage && mkdir coverage",
+    "start": "GOCOVERDIR=coverage ./realworld-go",
+    "stop": "kill-port 3000 --graceful > /dev/null 2>&1 || true",
+    "test:only": "curl -sfv http://localhost:3000/api",
+    "test": "./start-and-test.sh",
+    "coverage": "go tool covdata percent -i coverage/"
   },
   "devDependencies": {
     "kill-port-process": "^3.2.1",
