@@ -5,12 +5,17 @@
     "prestart": "rm -rf coverage && mkdir coverage",
     "start": "GOCOVERDIR=coverage ./realworld-go",
     "stop": "kill-port 3000 --graceful > /dev/null 2>&1 || true",
-    "test:only": "curl -sfv http://localhost:3000/api",
+    "test:only": "mocha --bail",
     "test": "./start-and-test.sh",
     "coverage": "go tool covdata percent -i coverage/"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "axios": "^1.13.2",
     "kill-port-process": "^3.2.1",
+    "mocha": "^11.7.5",
     "wait-port": "^1.1.0"
   }
 }

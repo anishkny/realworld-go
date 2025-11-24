@@ -1,0 +1,225 @@
+import { describe, it, before, after } from "mocha";
+import { faker } from "@faker-js/faker";
+import { strict as assert } from "assert";
+import Ajv from "ajv";
+import addFormats from "ajv-formats";
+import axios from "axios";
+import fs from "fs";
+
+const BASE_URL = "http://localhost:3000/api";
+const CONTEXT_FILE = "test/context.json";
+
+axios.defaults.validateStatus = (status) => status < 500;
+axios.defaults.baseURL = BASE_URL;
+
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+
+const context = {};
+
+before(() => {
+  if (fs.existsSync(CONTEXT_FILE)) {
+    Object.assign(context, JSON.parse(fs.readFileSync(CONTEXT_FILE, "utf-8")));
+  }
+
+  // Create test user if not exists
+  if (!context.user) {
+    context.user = generateTestUserData();
+  }
+});
+
+after(() => {
+  fs.writeFileSync(CONTEXT_FILE, JSON.stringify(context, null, 2));
+});
+
+describe("Health", () => {
+  it("Root", async () => {
+    const res = await axios.get("");
+    assert.equal(res.status, 200);
+  });
+});
+
+describe("Auth", () => {
+  it("Register", async () => {
+    context.user = generateTestUserData();
+    const res = await axios.post("/users", { user: context.user });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().authenticatedUser);
+    assert.equal(res.data.user.username, context.user.username);
+    assert.equal(res.data.user.email, context.user.email);
+    context.user.token = res.data.user.token;
+  });
+
+  it("Register - Bad request", async () => {
+    const res = await axios.post("/users", {
+      user: { email: context.user.email },
+    });
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, {
+      errors: {
+        Username:
+          "Field validation for 'Username' failed on the 'required' tag",
+        Password:
+          "Field validation for 'Password' failed on the 'required' tag",
+      },
+    });
+
+    // Empty request
+    const res2 = await axios.post("/users", null);
+    assert.equal(res2.status, 422);
+    assert.deepEqual(res2.data, { errors: { error: "EOF" } });
+  });
+
+  it("Register - Empty request", async () => {
+    const res = await axios.post("/users", {});
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, {
+      errors: {
+        Email: "Field validation for 'Email' failed on the 'required' tag",
+        Password:
+          "Field validation for 'Password' failed on the 'required' tag",
+        Username:
+          "Field validation for 'Username' failed on the 'required' tag",
+      },
+    });
+  });
+});
+
+// ----------------------------------------
+// HELPERS
+// ----------------------------------------
+function generateTestUserData(prefix = "") {
+  const username = prefix + faker.internet.username().toLowerCase();
+  const email = `${username}@email.com`;
+  const password = "password";
+  return { username, email, password };
+}
+
+function assertSchema(data, schema) {
+  const validate = ajv.compile(schema);
+  const valid = validate(data);
+  if (!valid) {
+    console.error(validate.errors);
+  }
+  assert.ok(valid, "Response does not match schema");
+}
+
+function getSchemas() {
+  return {
+    authenticatedUser: {
+      type: "object",
+      properties: {
+        user: {
+          type: "object",
+          properties: {
+            email: {
+              type: "string",
+            },
+            token: {
+              type: "string",
+            },
+            username: {
+              type: "string",
+            },
+            bio: {
+              type: ["string", "null"],
+            },
+            image: {
+              type: ["string", "null"],
+            },
+          },
+          additionalProperties: false,
+          required: ["email", "token", "username"],
+        },
+      },
+      additionalProperties: false,
+      required: ["user"],
+    },
+    profile: {
+      type: "object",
+      properties: {
+        profile: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+            },
+            bio: {
+              type: "string",
+            },
+            image: {
+              type: "string",
+            },
+            following: {
+              type: "boolean",
+            },
+          },
+          required: ["username", "bio", "image", "following"],
+        },
+      },
+      required: ["profile"],
+    },
+    article: {
+      type: "object",
+      properties: {
+        article: {
+          type: "object",
+          properties: {
+            slug: { type: "string" },
+            title: { type: "string" },
+            description: { type: "string" },
+            body: { type: "string" },
+            tagList: {
+              type: "array",
+              items: { type: "string" },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+            },
+            favorited: { type: "boolean" },
+            favoritesCount: { type: "integer" },
+            author: {
+              type: "object",
+              properties: {
+                username: { type: "string" },
+                bio: { type: "string" },
+                image: { type: "string" },
+                following: { type: "boolean" },
+              },
+              required: ["username", "bio", "image", "following"],
+              additionalProperties: false,
+            },
+          },
+          required: [
+            "slug",
+            "title",
+            "description",
+            "body",
+            "tagList",
+            "createdAt",
+            "updatedAt",
+            "favorited",
+            "favoritesCount",
+            "author",
+          ],
+          additionalProperties: false,
+        },
+      },
+      required: ["article"],
+      additionalProperties: false,
+    },
+  };
+}
+
+function assertArticlesInDescendingOrder(articles) {
+  for (let i = 1; i < articles.length; i++) {
+    const prevDate = new Date(articles[i - 1].updatedAt);
+    const currDate = new Date(articles[i].updatedAt);
+    assert.ok(prevDate >= currDate);
+  }
+}
