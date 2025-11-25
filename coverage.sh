@@ -2,10 +2,9 @@
 set -euxo pipefail
 
 # Install go-ignore-cov if not already installed
-export GO_IGNORE_COV_BIN=`go env GOPATH`/bin/go-ignore-cov
-set +e
-which $GO_IGNORE_COV_BIN || go install github.com/hexira/go-ignore-cov
-set -e
+export GOPATH=$(go env GOPATH)
+export GO_IGNORE_COV_BIN=$GOPATH/bin/go-ignore-cov
+which $GO_IGNORE_COV_BIN || go install github.com/hexira/go-ignore-cov@latest
 
 # Convert coverage data to text format
 go tool covdata textfmt -i coverage/ -o coverage/coverage.txt

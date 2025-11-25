@@ -18,8 +18,14 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
       - uses: actions/setup-node@v6
       - name: Build and Test
         run: |
           npm install
           npm test
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          path: coverage/
