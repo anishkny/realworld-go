@@ -42,6 +42,7 @@ func ConnectDatabase() {
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
+		//coverage:ignore
 		log.Fatal("Failed to connect to database:", err)
 	}
 

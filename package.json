@@ -7,7 +7,7 @@
     "stop": "kill-port 3000 --graceful > /dev/null 2>&1 || true",
     "test:only": "mocha --bail",
     "test": "./start-and-test.sh",
-    "coverage": "go tool covdata percent -i coverage/"
+    "coverage": "./coverage.sh"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",

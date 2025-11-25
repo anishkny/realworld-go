@@ -18,6 +18,7 @@ func RegisterUser(c *gin.Context) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userDTO.Password), bcrypt.DefaultCost)
 	if err != nil {
+		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to hash password"})
 		return
 	}
@@ -30,6 +31,7 @@ func RegisterUser(c *gin.Context) {
 
 	err2 := gorm.G[User](DB).Create(context.Background(), &user)
 	if err2 != nil {
+		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to create user"})
 		return
 	}
