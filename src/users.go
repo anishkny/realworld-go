@@ -1,7 +1,6 @@
 package src
 
 import (
-	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,10 +32,45 @@ func RegisterUser(c *gin.Context) {
 		Username: userDTO.Username,
 		Password: string(hashedPassword),
 	}
-	err = gorm.G[User](DB).Create(context.Background(), &user)
+	err = gorm.G[User](db).Create(c, &user)
 	if err != nil {
 		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	// Generate JWT token
+	token := GenerateJWT(user)
+	if token == "" {
+		//coverage:ignore
+		c.JSON(500, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	// Return response
+	c.JSON(200, gin.H{"user": CreateUserResponse(user, token)})
+}
+
+func LoginUser(c *gin.Context) {
+	var userDTOEnv UserLoginDTOEnvelope
+	var err error
+	if err = c.ShouldBindJSON(&userDTOEnv); err != nil {
+		c.JSON(422, FormatBindErrors(err))
+		return
+	}
+	userDTO := userDTOEnv.User
+
+	// Find user by email
+	user, err := gorm.G[User](db).Where("email = ?", userDTO.Email).First(c)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Compare password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userDTO.Password))
+	if err != nil {
+		c.JSON(401, gin.H{"error": "Wrong password"})
 		return
 	}
 
@@ -93,6 +127,15 @@ type UserRegistrationDTOEnvelope struct {
 type UserRegistrationDTO struct {
 	Email    string `json:"email" binding:"required,email"`
 	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type UserLoginDTOEnvelope struct {
+	User UserLoginDTO `json:"user"`
+}
+
+type UserLoginDTO struct {
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 

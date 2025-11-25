@@ -63,25 +63,65 @@ describe("Auth", () => {
           "Field validation for 'Password' failed on the 'required' tag",
       },
     });
+  });
 
-    // Empty request
-    const res2 = await axios.post("/users", null);
+  it("Register - Empty request", async () => {
+    const res = await axios.post("/users", null);
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, { errors: { error: "EOF" } });
+  });
+
+  it("Login", async () => {
+    const res = await axios.post("/users/login", {
+      user: {
+        email: context.user.email,
+        password: context.user.password,
+      },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().authenticatedUser);
+    assert.equal(res.data.user.username, context.user.username);
+    assert.equal(res.data.user.email, context.user.email);
+    context.user.token = res.data.user.token;
+  });
+
+  it("Login - Bad request", async () => {
+    const res = await axios.post("/users/login", {
+      user: { email: context.user.email },
+    });
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, {
+      errors: {
+        Password:
+          "Field validation for 'Password' failed on the 'required' tag",
+      },
+    });
+  });
+
+  it("Login - Empty request", async () => {
+    const res2 = await axios.post("/users/login", null);
     assert.equal(res2.status, 422);
     assert.deepEqual(res2.data, { errors: { error: "EOF" } });
   });
 
-  it("Register - Empty request", async () => {
-    const res = await axios.post("/users", {});
-    assert.equal(res.status, 422);
-    assert.deepEqual(res.data, {
-      errors: {
-        Email: "Field validation for 'Email' failed on the 'required' tag",
-        Password:
-          "Field validation for 'Password' failed on the 'required' tag",
-        Username:
-          "Field validation for 'Username' failed on the 'required' tag",
+  it("Login - Unknown email", async () => {
+    const res = await axios.post("/users/login", {
+      user: {
+        email: faker.internet.email(),
+        password: context.user.password,
       },
     });
+    assert.equal(res.status, 401);
+  });
+
+  it("Login - Wrong password", async () => {
+    const res = await axios.post("/users/login", {
+      user: {
+        email: context.user.email,
+        password: "wrongpassword",
+      },
+    });
+    assert.equal(res.status, 401);
   });
 });
 

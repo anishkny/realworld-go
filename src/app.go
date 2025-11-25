@@ -14,6 +14,7 @@ func CreateApp() *gin.Engine {
 
 		// User
 		api.POST("/users", RegisterUser)
+		api.POST("/users/login", LoginUser)
 	}
 	TrapSignals()
 	return app

@@ -13,9 +13,10 @@ import (
 	uuid "github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+var db *gorm.DB
 
 func TrapSignals() {
 	sig := make(chan os.Signal, 1)
@@ -34,19 +35,36 @@ type BaseModel struct {
 }
 
 func ConnectDatabase() {
+	// Get database DSN from environment variable or use default
+	// Format: "host=<host>	user=<user> password=<password> dbname=<dbname> port=<port>"
 	dsn := os.Getenv("DATABASE_DSN")
 	if dsn == "" {
 		dsn = "host=localhost user=postgres password=password dbname=postgres port=5432"
 	}
 
+	// Create logger to ignore "record not found" errors
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Warn,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  true,
+		},
+	)
+
+	// Connect to database
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		//coverage:ignore
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	DB.AutoMigrate(&User{})
+	// Auto-migrate models
+	db.AutoMigrate(&User{})
 }
 
 func FormatBindErrors(err error) gin.H {
