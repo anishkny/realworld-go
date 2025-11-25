@@ -1,10 +1,8 @@
 package src
 
 import (
-	"time"
-
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	uuid "github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -86,6 +84,22 @@ func LoginUser(c *gin.Context) {
 	c.JSON(200, gin.H{"user": CreateUserResponse(user, token)})
 }
 
+func GetUser(c *gin.Context) {
+	userId, _ := c.Get("userId")
+	token, _ := c.Get("token")
+
+	// Find user by ID
+	user, err := gorm.G[User](db).Where("id = ?", userId.(uuid.UUID)).First(c)
+	if err != nil {
+		//coverage:ignore
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Return response
+	c.JSON(200, gin.H{"user": CreateUserResponse(user, token.(string))})
+}
+
 // ---------- Helpers ---------- //
 func CreateUserResponse(user User, token string) UserResponse {
 	return UserResponse{
@@ -95,28 +109,6 @@ func CreateUserResponse(user User, token string) UserResponse {
 		Bio:      user.Bio,
 		Image:    user.Image,
 	}
-}
-
-func GenerateJWT(user User) string {
-	// Create the JWT claims, which includes the username and expiry time
-	claims := jwt.MapClaims{
-		"sub": user.Id,
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
-		"iat": time.Now().Unix(),
-	}
-
-	// Create token
-	jwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign the token with a secret
-	secret := []byte("your_secret_key") // Replace with your actual secret key
-	tokenString, err := jwt.SignedString(secret)
-	if err != nil {
-		//coverage:ignore
-		return ""
-	}
-
-	return tokenString
 }
 
 // ---------- DTOs ---------- //

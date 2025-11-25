@@ -10,11 +10,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+const JWT_SECRET = "your_secret_key"
 
 var db *gorm.DB
 
@@ -82,4 +85,85 @@ func FormatBindErrors(err error) gin.H {
 		errors["error"] = err.Error()
 	}
 	return gin.H{"errors": errors}
+}
+
+func Authenticate(c *gin.Context) {
+	// If authorization header is present, validate token and set user in context
+	var userId uuid.UUID
+	if token := c.GetHeader("Authorization"); token != "" {
+		c.Set("token", token)
+		userId = ValidateJWT(token)
+		if userId == uuid.Nil {
+			c.JSON(401, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+		c.Set("userId", userId)
+	}
+
+	// If no authorization header, check if method+route is allowed unauthenticated
+	if userId == uuid.Nil {
+		method := c.Request.Method
+		route := c.FullPath()
+		allowedUnauthenticated := map[string]map[string]bool{
+			"GET": {
+				"/api": true,
+			},
+			"POST": {
+				"/api/users":       true,
+				"/api/users/login": true,
+			},
+		}
+		if routes, ok := allowedUnauthenticated[method]; !ok || !routes[route] {
+			c.JSON(401, gin.H{"error": "Authentication required"})
+			c.Abort()
+			return
+		}
+	}
+
+	c.Next()
+}
+
+func GenerateJWT(user User) string {
+	// Create the JWT claims, which includes the username and expiry time
+	claims := jwt.MapClaims{
+		"sub": user.Id,
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"iat": time.Now().Unix(),
+	}
+
+	// Create token
+	jwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with a secret
+	tokenString, err := jwt.SignedString([]byte(JWT_SECRET))
+	if err != nil {
+		//coverage:ignore
+		return ""
+	}
+
+	return tokenString
+}
+
+func ValidateJWT(token string) uuid.UUID {
+	// Parse the token
+	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(JWT_SECRET), nil
+	})
+	if err != nil || !parsedToken.Valid {
+		return uuid.Nil
+	}
+
+	// Extract user ID from claims
+	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+		if sub, ok := claims["sub"].(string); ok {
+			userId, err := uuid.Parse(sub)
+			if err == nil {
+				return userId
+			}
+		}
+	}
+
+	//coverage:ignore
+	return uuid.Nil
 }
