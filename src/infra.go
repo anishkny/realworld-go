@@ -1,6 +1,7 @@
 package src
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -16,7 +17,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+var db *gorm.DB
+var ctx = context.Background()
 
 func TrapSignals() {
 	sig := make(chan os.Signal, 1)
@@ -55,7 +57,7 @@ func ConnectDatabase() {
 
 	// Connect to database
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: newLogger,
 	})
 	if err != nil {
@@ -64,7 +66,7 @@ func ConnectDatabase() {
 	}
 
 	// Auto-migrate models
-	DB.AutoMigrate(&User{})
+	db.AutoMigrate(&User{})
 }
 
 func FormatBindErrors(err error) gin.H {

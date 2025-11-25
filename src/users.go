@@ -1,7 +1,6 @@
 package src
 
 import (
-	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,8 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
-
-var ctx = context.Background()
 
 func RegisterUser(c *gin.Context) {
 	var userDTOEnv UserRegistrationDTOEnvelope
@@ -35,7 +32,7 @@ func RegisterUser(c *gin.Context) {
 		Username: userDTO.Username,
 		Password: string(hashedPassword),
 	}
-	err = gorm.G[User](DB).Create(ctx, &user)
+	err = gorm.G[User](db).Create(ctx, &user)
 	if err != nil {
 		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to create user"})
@@ -64,7 +61,7 @@ func LoginUser(c *gin.Context) {
 	userDTO := userDTOEnv.User
 
 	// Find user by email
-	user, err := gorm.G[User](DB).Where("email = ?", userDTO.Email).First(ctx)
+	user, err := gorm.G[User](db).Where("email = ?", userDTO.Email).First(ctx)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "User not found"})
 		return
