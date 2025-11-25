@@ -32,7 +32,7 @@ func RegisterUser(c *gin.Context) {
 		Username: userDTO.Username,
 		Password: string(hashedPassword),
 	}
-	err = gorm.G[User](db).Create(ctx, &user)
+	err = gorm.G[User](db).Create(c, &user)
 	if err != nil {
 		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to create user"})
@@ -61,7 +61,7 @@ func LoginUser(c *gin.Context) {
 	userDTO := userDTOEnv.User
 
 	// Find user by email
-	user, err := gorm.G[User](db).Where("email = ?", userDTO.Email).First(ctx)
+	user, err := gorm.G[User](db).Where("email = ?", userDTO.Email).First(c)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "User not found"})
 		return

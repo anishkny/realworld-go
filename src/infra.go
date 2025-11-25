@@ -1,7 +1,6 @@
 package src
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -18,7 +17,6 @@ import (
 )
 
 var db *gorm.DB
-var ctx = context.Background()
 
 func TrapSignals() {
 	sig := make(chan os.Signal, 1)
