@@ -7,7 +7,7 @@ import (
 func CreateApp() *gin.Engine {
 	ConnectDatabase()
 	app := gin.Default()
-	api := app.Group("/api")
+	api := app.Group("/api", Authenticate)
 	{
 		// Health
 		api.GET("", func(c *gin.Context) { c.JSON(200, "OK") })
@@ -15,6 +15,7 @@ func CreateApp() *gin.Engine {
 		// User
 		api.POST("/users", RegisterUser)
 		api.POST("/users/login", LoginUser)
+		api.GET("/user", GetUser)
 	}
 	TrapSignals()
 	return app

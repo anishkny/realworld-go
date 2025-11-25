@@ -125,6 +125,30 @@ describe("Auth", () => {
   });
 });
 
+describe("User", () => {
+  it("Current user", async () => {
+    const res = await axios.get("/user", {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().authenticatedUser);
+    assert.equal(res.data.user.username, context.user.username);
+    assert.equal(res.data.user.email, context.user.email);
+  });
+
+  it("Current user - Bad token", async () => {
+    const res = await axios.get("/user", {
+      headers: { Authorization: "BadToken" },
+    });
+    assert.equal(res.status, 401);
+  });
+
+  it("Current user - Missing token", async () => {
+    const res = await axios.get("/user");
+    assert.equal(res.status, 401);
+  });
+});
+
 // ----------------------------------------
 // HELPERS
 // ----------------------------------------
