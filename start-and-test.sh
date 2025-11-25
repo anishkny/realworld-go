@@ -7,7 +7,7 @@ TIMEOUT=30000 # in milliseconds
 
 npm run stop
 npm run build
-npm run start &
+npm run start:only &
 npx wait-port ${URL} --output dots --timeout=${TIMEOUT}
 npm run test:only
 npm run stop

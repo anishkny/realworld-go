@@ -2,8 +2,8 @@
   "type": "module",
   "scripts": {
     "build": "go build -cover",
-    "prestart": "rm -rf coverage && mkdir coverage",
-    "start": "GOCOVERDIR=coverage ./realworld-go",
+    "start:only": "rm -rf coverage && mkdir coverage && GOCOVERDIR=coverage ./realworld-go",
+    "start": "npm run build && npm run stop && npm run start:only",
     "stop": "kill-port 3000 --graceful > /dev/null 2>&1 || true",
     "test:only": "mocha --bail",
     "test": "./start-and-test.sh",
