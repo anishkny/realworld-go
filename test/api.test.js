@@ -149,12 +149,22 @@ describe("User", () => {
   });
 
   it("Update user", async () => {
+    const newUsername = "updated_" + context.user.username;
     const newEmail = "updated_" + context.user.email;
+    const newPassword = "newpassword";
     const newBio = faker.lorem.sentence();
     const newImage = faker.image.avatar();
     const res = await axios.put(
       "/user",
-      { user: { email: newEmail, bio: newBio, image: newImage } },
+      {
+        user: {
+          email: newEmail,
+          username: newUsername,
+          password: newPassword,
+          bio: newBio,
+          image: newImage,
+        },
+      },
       { headers: { Authorization: context.user.token } }
     );
     assert.equal(res.status, 200);
@@ -162,17 +172,19 @@ describe("User", () => {
     assert.equal(res.data.user.bio, newBio);
     assert.equal(res.data.user.image, newImage);
     context.user = res.data.user;
+    context.user.password = newPassword;
   });
 
   it("Update user - Bad request", async () => {
-    const res = await axios.put(
-      "/user",
-      { xuser: { email: "not-an-email" } },
-      { headers: { Authorization: context.user.token } }
-    );
+    const res = await axios.put("/user", `{ gibberish `, {
+      headers: { Authorization: context.user.token },
+    });
     assert.equal(res.status, 422);
     assert.deepEqual(res.data, {
-      error: "At least one field must be provided",
+      errors: {
+        error:
+          "invalid character 'g' looking for beginning of object key string",
+      },
     });
   });
 
