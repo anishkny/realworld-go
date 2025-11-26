@@ -17,7 +17,7 @@ func RegisterUser(c *gin.Context) {
 	userDTO := userDTOEnv.User
 
 	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userDTO.Password), bcrypt.DefaultCost)
+	hashedPassword, err := HashPassword(userDTO.Password)
 	if err != nil {
 		//coverage:ignore
 		c.JSON(500, gin.H{"error": "Failed to hash password"})
@@ -124,7 +124,7 @@ func UpdateUser(c *gin.Context) {
 		patch.Username = *userDTO.Username
 	}
 	if userDTO.Password != nil {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*userDTO.Password), bcrypt.DefaultCost)
+		hashedPassword, err := HashPassword(*userDTO.Password)
 		if err != nil {
 			//coverage:ignore
 			c.JSON(500, gin.H{"error": "Failed to hash password"})
