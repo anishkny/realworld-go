@@ -147,6 +147,46 @@ describe("User", () => {
     const res = await axios.get("/user");
     assert.equal(res.status, 401);
   });
+
+  it("Update user", async () => {
+    const newEmail = "updated_" + context.user.email;
+    const newBio = faker.lorem.sentence();
+    const newImage = faker.image.avatar();
+    const res = await axios.put(
+      "/user",
+      { user: { email: newEmail, bio: newBio, image: newImage } },
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().authenticatedUser);
+    assert.equal(res.data.user.bio, newBio);
+    assert.equal(res.data.user.image, newImage);
+    context.user = res.data.user;
+  });
+
+  it("Update user - Bad request", async () => {
+    const res = await axios.put(
+      "/user",
+      { xuser: { email: "not-an-email" } },
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, {
+      error: "At least one field must be provided",
+    });
+  });
+
+  it("Update user - No mutations", async () => {
+    const res = await axios.put(
+      "/user",
+      { user: {} },
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 422);
+    assert.deepEqual(res.data, {
+      error: "At least one field must be provided",
+    });
+  });
 });
 
 // ----------------------------------------
