@@ -17,6 +17,9 @@ func CreateApp() *gin.Engine {
 		api.POST("/users/login", LoginUser)
 		api.GET("/user", GetUser)
 		api.PUT("/user", UpdateUser)
+
+		// Profile
+		api.GET("/profiles/:username", GetProfile)
 	}
 	TrapSignals()
 	return app
