@@ -68,7 +68,7 @@ func ConnectDatabase() {
 	}
 
 	// Auto-migrate models
-	db.AutoMigrate(&User{})
+	db.AutoMigrate(&User{}, &Follow{})
 }
 
 func FormatBindErrors(err error) gin.H {

@@ -201,6 +201,35 @@ describe("User", () => {
   });
 });
 
+describe("Profile", () => {
+  before(async () => {
+    // Register celeb user
+    context.celebUser = generateTestUserData("celeb_");
+    const res = await axios.post("/users", { user: context.celebUser });
+    assert.equal(res.status, 200);
+    context.celebUser.token = res.data.user.token;
+  });
+
+  it("Get profile", async () => {
+    const res = await axios.get(`/profiles/${context.celebUser.username}`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.bio, "");
+    assert.equal(res.data.profile.image, "");
+    assert.equal(res.data.profile.following, false);
+  });
+
+  it("Get profile - Unknown user", async () => {
+    const res = await axios.get(`/profiles/unknownuser`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 404);
+  });
+});
+
 // ----------------------------------------
 // HELPERS
 // ----------------------------------------
