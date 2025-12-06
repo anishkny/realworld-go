@@ -7,11 +7,6 @@ import (
 )
 
 func GetProfile(c *gin.Context) {
-	var followerUserId *uuid.UUID
-	if val, exists := c.Get("userId"); exists {
-		uid := val.(uuid.UUID)
-		followerUserId = &uid
-	}
 	followedUsername := c.Param("username")
 
 	// Retrieve followedUser by username
@@ -26,14 +21,13 @@ func GetProfile(c *gin.Context) {
 	}
 
 	// Return profile response
-	c.JSON(200, GetProfileAsViewer(c, followedUser, followerUserId))
+	c.JSON(200, CreateProfileResponse(c, followedUser))
 }
 
 func FollowUser(c *gin.Context) {
-	var followerUserId *uuid.UUID
+	var followerUserId uuid.UUID
 	if val, exists := c.Get("userId"); exists {
-		uid := val.(uuid.UUID)
-		followerUserId = &uid
+		followerUserId = val.(uuid.UUID)
 	}
 	followedUsername := c.Param("username")
 
@@ -50,7 +44,7 @@ func FollowUser(c *gin.Context) {
 
 	// Create follow relationship
 	follow := Follow{
-		FollowerID: *followerUserId,
+		FollowerID: followerUserId,
 		FollowedID: followedUser.Id,
 	}
 	err = gorm.G[Follow](db).Create(c, &follow)
@@ -61,14 +55,17 @@ func FollowUser(c *gin.Context) {
 	}
 
 	// Return profile response
-	c.JSON(200, GetProfileAsViewer(c, followedUser, followerUserId))
+	c.JSON(200, CreateProfileResponse(c, followedUser))
 }
 
-func GetProfileAsViewer(c *gin.Context, followedUser User, followerUserId *uuid.UUID) ProfileResponseEnvelope {
+func CreateProfileResponse(c *gin.Context, followedUser User) ProfileResponseEnvelope {
 	var isFollowing bool = false
 
-	// If specified, check if followerUser is following followedUser
-	if followerUserId != nil {
+	// Get followerUserId from context if available
+	var followerUserId uuid.UUID
+	if val, exists := c.Get("userId"); exists {
+		// Check if follower is following followedUser
+		followerUserId = val.(uuid.UUID)
 		follow, err := gorm.G[Follow](db).Where("follower_id = ? AND followed_id = ?", followerUserId, followedUser.Id).First(c)
 		if err == nil && follow.Id != uuid.Nil {
 			isFollowing = true
