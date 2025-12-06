@@ -58,6 +58,36 @@ func FollowUser(c *gin.Context) {
 	c.JSON(200, CreateProfileResponse(c, followedUser))
 }
 
+func UnfollowUser(c *gin.Context) {
+	var followerUserId uuid.UUID
+	if val, exists := c.Get("userId"); exists {
+		followerUserId = val.(uuid.UUID)
+	}
+	followedUsername := c.Param("username")
+
+	// Retrieve followedUser by username
+	followedUser, err := gorm.G[User](db).Where("username = ?", followedUsername).First(c)
+	if err == gorm.ErrRecordNotFound {
+		c.JSON(404, gin.H{"error": "User not found"})
+		return
+	} else if err != nil {
+		//coverage:ignore
+		c.JSON(500, gin.H{"error": "Failed to retrieve user"})
+		return
+	}
+
+	// Delete follow relationship
+	_, err = gorm.G[Follow](db).Where("follower_id = ? AND followed_id = ?", followerUserId, followedUser.Id).Delete(c)
+	if err != nil {
+		//coverage:ignore
+		c.JSON(500, gin.H{"error": "Failed to unfollow user"})
+		return
+	}
+
+	// Return profile response
+	c.JSON(200, CreateProfileResponse(c, followedUser))
+}
+
 func CreateProfileResponse(c *gin.Context, followedUser User) ProfileResponseEnvelope {
 	var isFollowing bool = false
 

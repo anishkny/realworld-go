@@ -21,6 +21,7 @@ func CreateApp() *gin.Engine {
 		// Profile
 		api.GET("/profiles/:username", GetProfile)
 		api.POST("/profiles/:username/follow", FollowUser)
+		api.DELETE("/profiles/:username/follow", UnfollowUser)
 	}
 	TrapSignals()
 	return app
