@@ -20,6 +20,7 @@ func CreateApp() *gin.Engine {
 
 		// Profile
 		api.GET("/profiles/:username", GetProfile)
+		api.POST("/profiles/:username/follow", FollowUser)
 	}
 	TrapSignals()
 	return app
