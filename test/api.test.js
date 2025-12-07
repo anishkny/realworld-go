@@ -201,6 +201,105 @@ describe("User", () => {
   });
 });
 
+describe("Profile", () => {
+  before(async () => {
+    // Register celeb user
+    context.celebUser = generateTestUserData("celeb_");
+    const res = await axios.post("/users", { user: context.celebUser });
+    assert.equal(res.status, 200);
+    context.celebUser.token = res.data.user.token;
+  });
+
+  it("Get profile", async () => {
+    const res = await axios.get(`/profiles/${context.celebUser.username}`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.bio, "");
+    assert.equal(res.data.profile.image, "");
+    assert.equal(res.data.profile.following, false);
+  });
+
+  it("Get profile - Unauthenticated", async () => {
+    const res = await axios.get(`/profiles/${context.celebUser.username}`);
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.bio, "");
+    assert.equal(res.data.profile.image, "");
+    assert.equal(res.data.profile.following, false);
+  });
+
+  it("Get profile - Unknown user", async () => {
+    const res = await axios.get(`/profiles/unknownuser`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 404);
+  });
+
+  it("Follow", async () => {
+    const res = await axios.post(
+      `/profiles/${context.celebUser.username}/follow`,
+      {},
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.following, true);
+  });
+
+  it("Profile after follow", async () => {
+    const res = await axios.get(`/profiles/${context.celebUser.username}`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.following, true);
+  });
+
+  it("Follow unknown", async () => {
+    const res = await axios.post(
+      `/profiles/${faker.internet.username()}/follow`,
+      {},
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 404);
+  });
+
+  it("Unfollow", async () => {
+    const res = await axios.delete(
+      `/profiles/${context.celebUser.username}/follow`,
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.following, false);
+  });
+
+  it("Profile after unfollow", async () => {
+    const res = await axios.get(`/profiles/${context.celebUser.username}`, {
+      headers: { Authorization: context.user.token },
+    });
+    assert.equal(res.status, 200);
+    assertSchema(res.data, getSchemas().profile);
+    assert.equal(res.data.profile.username, context.celebUser.username);
+    assert.equal(res.data.profile.following, false);
+  });
+
+  it("Unfollow unknown", async () => {
+    const res = await axios.delete(
+      `/profiles/${faker.internet.username()}/follow`,
+      { headers: { Authorization: context.user.token } }
+    );
+    assert.equal(res.status, 404);
+  });
+});
+
 // ----------------------------------------
 // HELPERS
 // ----------------------------------------

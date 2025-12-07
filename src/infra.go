@@ -68,7 +68,7 @@ func ConnectDatabase() {
 	}
 
 	// Auto-migrate models
-	db.AutoMigrate(&User{})
+	db.AutoMigrate(&User{}, &Follow{})
 }
 
 func FormatBindErrors(err error) gin.H {
@@ -113,7 +113,8 @@ func Authenticate(c *gin.Context) {
 		route := c.FullPath()
 		allowedUnauthenticated := map[string]map[string]bool{
 			"GET": {
-				"/api": true,
+				"/api":                    true,
+				"/api/profiles/:username": true,
 			},
 			"POST": {
 				"/api/users":       true,
